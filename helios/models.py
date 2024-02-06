@@ -12,6 +12,8 @@ import datetime
 import io
 import uuid
 
+from django.utils import timezone
+
 import bleach
 import unicodecsv
 from django.conf import settings
@@ -366,7 +368,7 @@ class Election(HeliosModel):
     """
     has voting begun? voting begins if the election is frozen, at the prescribed date or at the date that voting was forced to start
     """
-    return self.frozen_at is not None and (self.voting_starts_at is None or (datetime.datetime.utcnow() >= (self.voting_started_at or self.voting_starts_at)))
+    return self.frozen_at is not None and (self.voting_starts_at is None or (timezone.now() >= (self.voting_started_at or self.voting_starts_at)))
     
   def voting_has_stopped(self):
     """
@@ -374,7 +376,7 @@ class Election(HeliosModel):
     or failing that the date voting was extended until, or failing that the date voting is scheduled to end at.
     """
     voting_end = self.voting_ended_at or self.voting_extended_until or self.voting_ends_at
-    return (voting_end is not None and datetime.datetime.utcnow() >= voting_end) or self.encrypted_tally
+    return (voting_end is not None and timezone.now() >= voting_end) or self.encrypted_tally
 
   @property
   def issues_before_freeze(self):
@@ -408,7 +410,7 @@ class Election(HeliosModel):
     return issues    
 
   def ready_for_tallying(self):
-    return datetime.datetime.utcnow() >= self.tallying_starts_at
+    return timezone.now() >= self.tallying_starts_at
 
   def compute_tally(self):
     """
@@ -441,7 +443,7 @@ class Election(HeliosModel):
     if not self.result:
       return
 
-    self.result_released_at = datetime.datetime.utcnow()
+    self.result_released_at = timezone.now()
   
   def combine_decryptions(self):
     """
@@ -529,7 +531,7 @@ class Election(HeliosModel):
     if len(self.issues_before_freeze) > 0:
       raise Exception("cannot freeze an election that has issues")
 
-    self.frozen_at = datetime.datetime.utcnow()
+    self.frozen_at = timezone.now()
     
     # voters hash
     self.generate_voters_hash()
@@ -595,7 +597,7 @@ class Election(HeliosModel):
     trustee.save()
 
   def append_log(self, text):
-    item = ElectionLog(election = self, log=text, at=datetime.datetime.utcnow())
+    item = ElectionLog(election = self, log=text, at=timezone.now())
     item.save()
     return item
 
@@ -818,7 +820,7 @@ class VoterFile(models.Model):
 
   def process(self):
     print("inside process method")
-    self.processing_started_at = datetime.datetime.utcnow()
+    self.processing_started_at = timezone.now()
     self.save()
 
     voters = list(self.itervoters())
@@ -854,7 +856,7 @@ class VoterFile(models.Model):
           if not existing_voter:
               Voter.register_user_in_election(user, self.election)
 
-    self.processing_finished_at = datetime.datetime.utcnow()
+    self.processing_finished_at = timezone.now()
     self.save()
 
     return self.num_voters
@@ -1144,9 +1146,9 @@ class CastVote(HeliosModel):
     result = self.vote.verify(self.voter.election)
 
     if result:
-      self.verified_at = datetime.datetime.utcnow()
+      self.verified_at = timezone.now()
     else:
-      self.invalidated_at = datetime.datetime.utcnow()
+      self.invalidated_at = timezone.now()
       
     # save and store the vote as the voter's last cast vote
     self.save()

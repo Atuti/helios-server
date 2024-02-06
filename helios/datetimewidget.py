@@ -11,7 +11,9 @@ from django.utils.encoding import force_unicode
 from django.conf import settings
 from django import forms
 import datetime, time
+
 from django.utils.safestring import mark_safe
+from django.utils import timezone
 
 # DATETIMEWIDGET
 calbtn = '''<img src="%smedia/admin/img/admin/icon_calendar.gif" alt="calendar" id="%s_btn" style="cursor: pointer;" title="Select date" />
@@ -67,15 +69,23 @@ class DateTimeWidget(forms.widgets.TextInput):
         value = data.get(name, None)
         if value in empty_values:
             return None
+        
         if isinstance(value, datetime.datetime):
-            return value
+            if timezone.is_aware(value):
+                return value  # If already timezone aware, return as is
+        else:
+            return timezone.make_aware(value, timezone.get_current_timezone())
+        
         if isinstance(value, datetime.date):
-            return datetime.datetime(value.year, value.month, value.day)
+            value = datetime.datetime(value.year, value.month, value.day)
+        
         for format in dtf:
             try:
-                return datetime.datetime(*time.strptime(value, format)[:6])
+                parsed_datetime = datetime.datetime.strptime(value, format)
+                return timezone.make_aware(parsed_datetime, timezone.get_current_timezone())
             except ValueError:
                 continue
+
         return None
 
     def _has_changed(self, initial, data):

@@ -1,5 +1,7 @@
 import datetime
 
+from django.utils import timezone
+
 from django.forms import fields
 
 from .widgets import SplitSelectDateTimeWidget
@@ -25,6 +27,10 @@ class SplitDateTimeField(fields.MultiValueField):
         if data_list:
             if not (data_list[0] and data_list[1]):
                 return None
-            return datetime.datetime.combine(*data_list)
+            
+            combined_datetime = datetime.datetime.combine(*data_list)
+
+            timezone_aware_datetime = timezone.make_aware(combined_datetime, timezone.get_current_timezone())
+            return timezone_aware_datetime
         return None
 

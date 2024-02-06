@@ -8,6 +8,8 @@ import re
 import uuid
 from urllib.parse import urlencode
 
+from django.utils import timezone
+
 import django_webtest
 from django.conf import settings
 from django.core import mail
@@ -55,7 +57,7 @@ class ElectionModelTests(TestCase):
 
         # should have a creation time
         self.assertNotEqual(self.election.created_at, None)
-        self.assertTrue(self.election.created_at < datetime.datetime.utcnow())
+        self.assertTrue(self.election.created_at < timezone.now())
 
     def test_find_election(self):
         election = models.Election.get_by_user_as_admin(self.user)[0]
@@ -194,7 +196,7 @@ class ElectionModelTests(TestCase):
         self.assertTrue(len(self.election.get_log().all()) > 0)
 
     def test_archive(self):
-        self.election.archived_at = datetime.datetime.utcnow()
+        self.election.archived_at = timezone.now()
         self.assertTrue(self.election.is_archived)
 
         self.election.archived_at = None

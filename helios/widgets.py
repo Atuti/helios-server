@@ -8,6 +8,8 @@ from django.template.loader import render_to_string
 from django.forms.widgets import Select, MultiWidget, DateInput, TextInput, Widget, SelectDateWidget
 from time import strftime
 
+from django.utils import timezone
+
 import re
 from django.utils.safestring import mark_safe
 
@@ -201,7 +203,9 @@ class SplitSelectDateTimeWidget(MultiWidget):
             if not (data_list[0] and data_list[1]):
                 return None
             try:
-                return datetime.datetime.combine(*data_list)
+                naive_datetime = datetime.datetime.combine(*data_list)
+                timezone_aware_datetime = timezone.make_aware(naive_datetime, timezone.get_current_timezone())
+                return timezone_aware_datetime
             except:
                 # badly formed date
                 return None

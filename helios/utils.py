@@ -10,6 +10,8 @@ import re
 import string
 import urllib.parse
 
+from django.utils import timezone
+
 from django.conf import settings
 
 from helios.crypto.utils import random
@@ -132,8 +134,13 @@ def get_prefix():
 def string_to_datetime(str, fmt="%Y-%m-%d %H:%M"):
   if str is None:
     return None
+  
+  naive_datetime = datetime.datetime.strptime(str, fmt)
 
-  return datetime.datetime.strptime(str, fmt)
+  #make it timezone aware
+  timezone_aware_datetime = timezone.make_aware(naive_datetime, timezone.get_current_timezone())
+
+  return timezone_aware_datetime
   
 ##
 ## email

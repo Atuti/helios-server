@@ -8,6 +8,8 @@ import datetime
 import uuid
 import logging
 
+from django.utils import timezone
+
 from helios.utils import to_json
 from . import algs
 from . import utils
@@ -430,7 +432,13 @@ class Election(HeliosObject):
     def _process_value_in(self, field_name, field_value):
         if field_name == 'frozen_at' or field_name == 'voting_starts_at' or field_name == 'voting_ends_at':
             if isinstance(field_value, str):
-                return datetime.datetime.strptime(field_value, '%Y-%m-%d %H:%M:%S')
+                naive_datetime = datetime.datetime.strptime(field_value, '%Y-%m-%d %H:%M:%S')
+                
+                #convert it to timezone aware 
+                timezone_aware_datetime  = timezone.make_aware(naive_datetime, timezone.get_current_timezone())
+
+                return timezone_aware_datetime
+
 
         if field_name == 'public_key':
             return algs.EGPublicKey.fromJSONDict(field_value)
@@ -567,7 +575,12 @@ class CastVote(HeliosObject):
     def _process_value_in(self, field_name, field_value):
         if field_name == 'cast_at':
             if isinstance(field_value, str):
-                return datetime.datetime.strptime(field_value, '%Y-%m-%d %H:%M:%S')
+                naive_datetime = datetime.datetime.strptime(field_value, '%Y-%m-%d %H:%M:%S')
+
+                #make it timezone aware
+                timezone_aware_datetime = timezone.make_aware(naive_datetime, timezone.get_current_timezone())
+                
+                return timezone_aware_datetime
 
         if field_name == 'vote':
             return EncryptedVote.fromJSONDict(field_value, self.election.public_key)

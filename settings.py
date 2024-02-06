@@ -22,7 +22,7 @@ DEBUG = (get_from_env('DEBUG', '1') == '1')
 # add admins of the form: 
 #    ('Ben Adida', 'ben@adida.net'),
 # if you want to be emailed about errors.
-admin_email = get_from_env('ADMIN_EMAIL', None)
+admin_email = get_from_env('ADMIN_EMAIL', 'hobsonmokaya@gmail.com')
 if admin_email:
     ADMINS = [(get_from_env('ADMIN_NAME', ''), admin_email)]
 else:
@@ -183,8 +183,8 @@ VOTER_UPLOAD_REL_PATH = "voters/%Y/%m/%d"
 
 
 # Change your email settings
-DEFAULT_FROM_EMAIL = get_from_env('DEFAULT_FROM_EMAIL', 'ben@adida.net')
-DEFAULT_FROM_NAME = get_from_env('DEFAULT_FROM_NAME', 'Ben for Helios')
+DEFAULT_FROM_EMAIL = get_from_env('DEFAULT_FROM_EMAIL', 'admin@baseyetu.co.ke')
+DEFAULT_FROM_NAME = get_from_env('DEFAULT_FROM_NAME', 'Admin for Helios')
 SERVER_EMAIL = '%s <%s>' % (DEFAULT_FROM_NAME, DEFAULT_FROM_EMAIL)
 
 LOGIN_URL = '/auth/'
@@ -265,11 +265,11 @@ GH_CLIENT_ID = get_from_env('GH_CLIENT_ID', '')
 GH_CLIENT_SECRET = get_from_env('GH_CLIENT_SECRET', '')
 
 # email server
-EMAIL_HOST = get_from_env('EMAIL_HOST', 'localhost')
-EMAIL_PORT = int(get_from_env('EMAIL_PORT', "2525"))
-EMAIL_HOST_USER = get_from_env('EMAIL_HOST_USER', '')
-EMAIL_HOST_PASSWORD = get_from_env('EMAIL_HOST_PASSWORD', '')
-EMAIL_USE_TLS = (get_from_env('EMAIL_USE_TLS', '0') == '1')
+EMAIL_HOST = get_from_env('EMAIL_HOST', 'smtp.ionos.com')
+EMAIL_PORT = int(get_from_env('EMAIL_PORT', "587"))
+EMAIL_HOST_USER = get_from_env('EMAIL_HOST_USER', 'admin@baseyetu.co.ke')
+EMAIL_HOST_PASSWORD = get_from_env('EMAIL_HOST_PASSWORD', 'Atuti@2024')
+EMAIL_USE_TLS = (get_from_env('EMAIL_USE_TLS', '1') == '1')
 
 # to use AWS Simple Email Service
 # in which case environment should contain

@@ -12,6 +12,8 @@ import os
 import uuid
 from urllib.parse import urlencode
 
+from django.utils import timezone
+
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db import transaction, IntegrityError
@@ -657,7 +659,7 @@ def one_election_cast_confirm(request, election):
       'vote' : vote,
       'voter' : voter,
       'vote_hash': vote_fingerprint,
-      'cast_at': datetime.datetime.utcnow(),
+      'cast_at': timezone.now(),
       'cast_ip': cast_ip
     }
 
@@ -935,7 +937,7 @@ def one_election_archive(request, election):
   archive_p = request.GET.get('archive_p', True)
   
   if bool(int(archive_p)):
-    election.archived_at = datetime.datetime.utcnow()
+    election.archived_at = timezone.now()
   else:
     election.archived_at = None
     
@@ -1068,9 +1070,9 @@ def one_election_compute_tally(request, election):
   check_csrf(request)
 
   if not election.voting_ended_at:
-    election.voting_ended_at = datetime.datetime.utcnow()
+    election.voting_ended_at = timezone.now()
 
-  election.tallying_started_at = datetime.datetime.utcnow()
+  election.tallying_started_at = timezone.now()
   election.save()
 
   tasks.election_compute_tally.delay(election_id = election.id)
@@ -1467,7 +1469,9 @@ def ballot_list(request, election):
   if 'limit' in request.GET:
     limit = int(request.GET['limit'])
   if 'after' in request.GET:
-    after = datetime.datetime.strptime(request.GET['after'], '%Y-%m-%d %H:%M:%S')
+    after_naive = datetime.datetime.strptime(request.GET['after'], '%Y-%m-%d %H:%M:%S')
+
+    after = timezone.make_aware(after_naive, timezone.get_current_timezone())
     
   voters = Voter.get_by_election(election, cast=True, order_by='cast_at', limit=limit, after=after)
 
