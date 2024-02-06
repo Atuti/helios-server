@@ -15,6 +15,7 @@ import logging
 
 # some parameters to indicate that status updating is possible
 STATUS_UPDATES = False
+PASSWORD_REGISTER_URL_NAME = "auth@password@register"
 PASSWORD_LOGIN_URL_NAME = "auth@password@login"
 PASSWORD_FORGOTTEN_URL_NAME = "auth@password@forgotten"
 
@@ -29,12 +30,46 @@ def create_user(username, password, name = None):
   user = User.update_or_create(user_type='password', user_id=username, info = info)
   user.save()
 
+class RegisterForm(forms.Form):
+  name = forms.CharField(max_length=250)
+  username = forms.CharField(max_length=50)
+  password = forms.CharField(widget=forms.PasswordInput(), max_length=250)
+  confirm_password = forms.CharField(widget=forms.PasswordInput(), max_length=250)
+
 class LoginForm(forms.Form):
   username = forms.CharField(max_length=50)
   password = forms.CharField(widget=forms.PasswordInput(), max_length=100)
 
 def password_check(user, password):
   return (user and user.info['password'] == password)
+
+def password_register_view(request):
+  from helios_auth.view_utils import render_template
+  from helios_auth.views import after
+  from helios_auth.models import User
+
+  error = None
+
+  if request.method == "GET":
+    form = RegisterForm()
+  else:
+    form = RegisterForm(request.POST)
+
+    if form.is_valid():
+      name = form.cleaned_data['name'].strip()
+      username = form.cleaned_data['username'].strip()
+      password = form.cleaned_data['password'].strip()
+      confirm_password = form.cleaned_data['confirm_password'].strip()
+      if password == confirm_password:
+        info = {'password' : password, 'name': name}
+        try:
+          user = User.update_or_create(user_type='password', user_id=username, info = info)
+          user.save()
+          return HttpResponseRedirect(reverse(url_names.AUTH_INDEX))
+        except User.DoesNotExist:
+          pass
+
+  return render_template(request, 'password/register', {'form': form, 'error': error})
   
 # the view for logging in
 def password_login_view(request):
@@ -132,6 +167,7 @@ def can_create_election(user_id, user_info):
 
 
 urlpatterns = [
+  url(r'^password/register', password_register_view, name=PASSWORD_REGISTER_URL_NAME),
   url(r'^password/login', password_login_view, name=PASSWORD_LOGIN_URL_NAME),
   url(r'^password/forgot', password_forgotten_view, name=PASSWORD_FORGOTTEN_URL_NAME)
 ]

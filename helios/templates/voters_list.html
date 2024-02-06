@@ -110,19 +110,23 @@ Voters {{voters_page.start_index}} - {{voters_page.end_index}} (of {{total_voter
 
 <table class="pretty">
 <tr>
-{% if admin_p or not election.use_voter_aliases %}
-{% if admin_p %}
-<th style="width: 80px;">Actions</th>
-<th>Login</th>
-<th>Email Address</th>
-{% endif %}
-<th>Name</th>
-{% endif %}
+  {% if admin_p or not election.use_voter_aliases %}
+    {% if admin_p %}
+      <th style="width: 80px;">Actions</th>
+      <th>Login</th>
+      <th>Email Address</th>
+      <th>School</th>
+      <th>Level of study</th>
+      <th>Gender</th>
+    {% endif %}
+    <th>Name</th>
+  {% endif %}
 
-{% if election.use_voter_aliases %}
-<th>Alias</th>
-{% endif %}
-<th>Smart Ballot Tracker</th>
+  {% if election.use_voter_aliases %}
+    <th>Alias</th>
+  {% endif %}
+  
+  <th>Smart Ballot Tracker</th>
 </tr>
 {% for voter in voters %}
 <tr>
@@ -136,6 +140,9 @@ Voters {{voters_page.start_index}} - {{voters_page.end_index}} (of {{total_voter
 </td>
 <td>{{voter.voter_login_id}}</td>
 <td>{{voter.voter_email}}</td>
+<td>{{voter.school}}</td>
+<td>{{voter.level_of_study}}</td>
+<td>{{voter.gender}}</td>
 {% endif %}
 <td><img class="small-logo" src="/static/auth/login-icons/{{voter.voter_type}}.png" alt="{{voter.voter_type}}" /> {{voter.name}}</td>
 {% endif %}

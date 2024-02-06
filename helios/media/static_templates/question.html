@@ -4,7 +4,7 @@
 <h4>
 {#if $T.admin_p}[
 {#if $T.question$index > 0}<a href="javascript:question_move_up({$T.question$index});">^</a>]&nbsp;[{#/if}
-<a onclick="return confirm('Are you sure you want to remove this question?');" href="javascript:question_remove({$T.question$index})">x</a>] [<a href="javascript:question_edit({$T.question$index})">edit</a>] {#/if}{$T.question$index + 1}. {$T.question.question} ({$T.question.choice_type}, select between {$T.question.min} and {#if $T.question.max != null}{$T.question.max}{#else}unlimited{#/if} answers, result type {$T.question.result_type}{#if $T.question.randomize_answer_order}, random answer order{#/if}.)</h4>
+<a onclick="return confirm('Are you sure you want to remove this question?');" href="javascript:question_remove({$T.question$index})">x</a>] [<a href="javascript:question_edit({$T.question$index})">edit</a>] {#/if}{$T.question$index + 1}. {$T.question.question} ({$T.question.choice_type}, select between {$T.question.min} and {#if $T.question.max != null}{$T.question.max}{#else}unlimited{#/if} answers, result type {$T.question.result_type}, school {$T.question.school}, level of study {$T.question.level_of_study}, gender {$T.question.gender}, {#if $T.question.randomize_answer_order} random answer order{#/if}.)</h4>
 <ul>
 {#foreach $T.question.answers as answer}
 <li> {$T.answer}
@@ -53,6 +53,38 @@ Result Type:&nbsp;
 <select name="result_type">
     <option selected>absolute</option>
     <option>relative</option>
+</select>
+
+&nbsp;&nbsp;
+&nbsp;&nbsp;
+School:&nbsp;
+<select name="school">
+    <option value="any" selected>Any</option>
+    <option value="BS">School of Business</option>
+    <option value="EHSS">School of Education Humanities and Social Sciences</option>
+    <option value="NHS">School of Nursing and Health Sciences</option>
+    <option value="ST">School of Science and Technology</option>
+    <option value="GSR">School of Graduate Studies and Research</option>
+</select>
+
+&nbsp;&nbsp;
+&nbsp;&nbsp;
+Level Of Study:&nbsp;
+<select name="level_of_study">
+    <option value="any" selected>Any</option>
+    <option value="graduate">Graduate</option>
+    <option value="undergraduate">Undergraduate</option>
+    <option value="diploma">Diploma</option>
+    <option value="certificate">Certificate</option>
+</select>
+
+&nbsp;&nbsp;
+&nbsp;&nbsp;
+Gender:&nbsp;
+<select name="gender">
+    <option value="any" selected>Any</option>
+    <option value="male">Male</option>
+    <option value="female">Female</option>
 </select>
 
 &nbsp;&nbsp;
@@ -121,6 +153,39 @@ Result Type:&nbsp;
     <option selected>absolute</option>
     <option>relative</option>
 </select>
+
+&nbsp;&nbsp;
+&nbsp;&nbsp;
+School:&nbsp;
+<select name="school">
+    <option value="any" selected>Any</option>
+    <option value="BS">School of Business</option>
+    <option value="EHSS">School of Education Humanities and Social Sciences</option>
+    <option value="NHS">School of Nursing and Health Sciences</option>
+    <option value="ST">School of Science and Technology</option>
+    <option value="GSR">School of Graduate Studies and Research</option>
+</select>
+
+&nbsp;&nbsp;
+&nbsp;&nbsp;
+Level Of Study:&nbsp;
+<select name="level_of_study">
+    <option value="any" selected>Any</option>
+    <option value="graduate">Graduate</option>
+    <option value="undergraduate">Undergraduate</option>
+    <option value="diploma">Diploma</option>
+    <option value="certificate">Certificate</option>
+</select>
+
+&nbsp;&nbsp;
+&nbsp;&nbsp;
+Gender:&nbsp;
+<select name="gender">
+    <option value="any" selected>Any</option>
+    <option value="male">Male</option>
+    <option value="female">Female</option>
+</select>
+
 
 &nbsp;&nbsp;
 &nbsp;&nbsp;

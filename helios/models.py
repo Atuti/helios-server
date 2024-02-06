@@ -789,17 +789,35 @@ class VoterFile(models.Model):
         # which is supplied as the 4th field if known.
         voter_name = voter_fields[3].strip()
 
+      if len(voter_fields) > 4:
+        #voter school
+        voter_school = voter_fields[4].strip()
+
+      if len(voter_fields) > 5:
+        #voter level of study
+        voter_level_of_study = voter_fields[5].strip()
+
+      if len(voter_fields) > 6:
+        #voter gender
+        voter_gender = voter_fields[6].strip()
+
+      print('inside itervoters')
+
       yield {
         'voter_type': voter_type,
         'voter_id': voter_id,
         'email': voter_email,
         'name': voter_name,
+        'school': voter_school,
+        'level_of_study': voter_level_of_study,
+        'gender': voter_gender
       }
 
     if close:
       voter_stream.close()
 
   def process(self):
+    print("inside process method")
     self.processing_started_at = datetime.datetime.utcnow()
     self.save()
 
@@ -812,17 +830,23 @@ class VoterFile(models.Model):
           # does voter for this user already exist
           existing_voter = Voter.get_by_election_and_voter_id(self.election, voter['voter_id'])
           if existing_voter:
+              print(f'voter existing')
               continue
           # create the voter
           voter_uuid = str(uuid.uuid4())
+
+          #print school and level of study and gender
+          print(f'school_name: {voter["school"]}, level_of_study: {voter["level_of_study"]}, gender: {voter["gender"]}')
+
           new_voter = Voter(uuid=voter_uuid, user = None, voter_login_id = voter['voter_id'],
-              voter_name = voter['name'], voter_email = voter['email'], election = self.election)
+              voter_name = voter['name'], voter_email = voter['email'], school = voter['school'], level_of_study = voter['level_of_study'], gender = voter['gender'], election = self.election)
           new_voter.generate_password()
           election=self.election
           if election.use_voter_aliases:
               utils.lock_row(Election, election.id)
               alias_num = election.last_alias_num + 1
               new_voter.alias = "V%s" % alias_num
+              print(new_voter.alias)
           new_voter.save()
       else:
           user, _ = User.objects.get_or_create(user_type=voter['voter_type'], user_id=voter['voter_id'], defaults = {'name': voter['voter_id'], 'info': {}, 'token': None})
@@ -855,6 +879,11 @@ class Voter(HeliosModel):
   voter_password = models.CharField(max_length = 100, null=True)
   voter_name = models.CharField(max_length = 200, null=True)
   voter_email = models.CharField(max_length = 250, null=True)
+
+  #added fields
+  school = models.CharField(max_length = 20, null=True)
+  level_of_study = models.CharField(max_length = 100, null=True)
+  gender = models.CharField(max_length=50, null=True)
   
   # if election uses aliases
   alias = models.CharField(max_length = 100, null=True)
