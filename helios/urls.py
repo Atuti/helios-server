@@ -12,6 +12,7 @@ urlpatterns = [
 
   # election shortcut by shortname
   url(r'^e/(?P<election_short_name>[^/]+)$', views.election_shortcut, name=names.ELECTION_SHORTCUT),
+  url(r'^e/(?P<election_short_name>[^/]+)/(?P<s_identifier>[^/]+)/(?P<l_identifier>[^/]+)/(?P<g_identifier>[^/]+)/vote$', views.election_vote_shortcut, name=names.ELECTION_SHORTCUT_VOTE),
   url(r'^e/(?P<election_short_name>[^/]+)/vote$', views.election_vote_shortcut, name=names.ELECTION_SHORTCUT_VOTE),
 
   # vote shortcut

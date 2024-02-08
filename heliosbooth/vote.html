@@ -413,6 +413,7 @@ BOOTH.so_lets_go = function () {
 
     // election URL
     var election_url = $.query.get('election_url');
+    console.log(election_url)
     BOOTH.load_and_setup_election(election_url);
 };
 
@@ -430,6 +431,22 @@ BOOTH.nojava = function() {
 BOOTH.ready_p = false;
 
 $(document).ready(function() {
+
+    // Get the URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+
+    // Get the value of the 'identifier' parameter
+    const school_identifier = urlParams.get('si');
+    console.log('School Identifier:', school_identifier);
+
+    // Get the value of the 'identifier' parameter
+    const level_identifier = urlParams.get('li');
+    console.log('Level Identifier:', level_identifier);
+
+    // Get the value of the 'identifier' parameter
+    const gender_identifier = urlParams.get('gi');
+    console.log('School Identifier:', gender_identifier);
+
     if (USE_SJCL) {
       sjcl.random.startCollectors();
     }

@@ -59,8 +59,18 @@ def get_election_url(election):
 def get_election_badge_url(election):
   return settings.URL_HOST + reverse(url_names.election.ELECTION_BADGE, args=[election.uuid])
 
-def get_election_govote_url(election):
-  return settings.URL_HOST + reverse(url_names.ELECTION_SHORTCUT_VOTE, args=[election.short_name])
+def get_election_govote_url(election, school_identifier=None, level_identifier=None, gender_identifier=None):
+  if school_identifier:
+    encoded_school = school_identifier[::-1]
+  if level_identifier:
+    encoded_level = level_identifier[::-1]
+  if gender_identifier:
+    encoded_gender = gender_identifier[::-1]
+
+  if school_identifier and level_identifier and gender_identifier:
+    return settings.URL_HOST + reverse(url_names.ELECTION_SHORTCUT_VOTE, args=[election.short_name, encoded_school, encoded_level, encoded_gender])
+  else:
+    return settings.URL_HOST + reverse(url_names.ELECTION_SHORTCUT_VOTE, args=[election.short_name])
 
 def get_castvote_url(cast_vote):
   return settings.URL_HOST + reverse(url_names.CAST_VOTE_SHORTCUT, args=[cast_vote.vote_tinyhash])
@@ -119,22 +129,30 @@ def election_shortcut(request, election_short_name):
 
 # a hidden view behind the shortcut that performs the actual perm check
 @election_view()
-def _election_vote_shortcut(request, election):
-  vote_url = "%s/booth/vote.html?%s" % (settings.SECURE_URL_HOST, urlencode({'election_url' : reverse(url_names.election.ELECTION_HOME, args=[election.uuid])}))
+def _election_vote_shortcut(self, request, election_uuid, si_identifier=None, li_identifier=None, gi_identifier=None):
+  print(f"\n should be printed after {election_uuid} \t {gi_identifier}")
+  vote_url = "%s/booth/vote.html?%s" % (settings.SECURE_URL_HOST, urlencode({'election_url' : reverse(url_names.election.ELECTION_HOME, args=[election_uuid]), 'si':si_identifier, 'li':li_identifier, 'gi':gi_identifier}))
   
   test_cookie_url = "%s?%s" % (reverse(url_names.COOKIE_TEST), urlencode({'continue_url' : vote_url}))
 
   return HttpResponseRedirect(test_cookie_url)
   
-def election_vote_shortcut(request, election_short_name):
+def election_vote_shortcut(request, election_short_name, s_identifier, l_identifier, g_identifier):
+  print(f'school identifier in election_vote_shortcut: {s_identifier}')
+  print(f'level identifier in election_vote_shortcut: {l_identifier}')
+  print(f'gender identifier in election_vote_shortcut: {g_identifier}')
   election = Election.get_by_short_name(election_short_name)
+  print(f'election: {election.uuid}')
   if election:
+    print('inside election if!!!')
     if not election.voting_has_started():
-      return render_template(request, 'election_not_started', {'election': election})      
+      return render_template(request, 'election_not_started', {'election': election})   
     if election.voting_has_stopped():
-      return render_template(request, 'election_tallied', {'election': election})      
-    return _election_vote_shortcut(request, election_uuid=election.uuid)
+      return render_template(request, 'election_tallied', {'election': election})
+    print(f"\n should be printed before {election.uuid}")      
+    return _election_vote_shortcut(request, election.uuid, election.uuid, si_identifier=s_identifier, li_identifier=l_identifier, gi_identifier=g_identifier)
   else:
+    print('page not found')
     raise Http404
 
 @election_view()
@@ -360,6 +378,7 @@ def one_election_view(request, election):
 
 def test_cookie(request):
   continue_url = request.GET['continue_url']
+  print(f'continue url in test_cookie: {continue_url}')
   request.session.set_test_cookie()
   next_url = "%s?%s" % (reverse(url_names.COOKIE_TEST_2), urlencode({'continue_url': continue_url}))
   return HttpResponseRedirect(settings.SECURE_URL_HOST + next_url)  
@@ -367,11 +386,14 @@ def test_cookie(request):
 def test_cookie_2(request):
   continue_url = request.GET['continue_url']
 
+  print(f'continue_url in test_cookie_2: {continue_url}')
+
   if not request.session.test_cookie_worked():
+    print('cookies not configured')
     return HttpResponseRedirect(settings.SECURE_URL_HOST + ("%s?%s" % (reverse(url_names.COOKIE_NO), urlencode({'continue_url': continue_url}))))
 
   request.session.delete_test_cookie()
-  return HttpResponseRedirect(continue_url)  
+  return HttpResponseRedirect(continue_url)
 
 def nocookies(request):
   retest_url = "%s?%s" % (reverse(url_names.COOKIE_TEST), urlencode({'continue_url' : request.GET['continue_url']}))
@@ -1347,7 +1369,10 @@ def voters_email(request, election):
     voter = None
   
   election_url = get_election_url(election)
-  election_vote_url = get_election_govote_url(election)
+  if voter:
+    election_vote_url = get_election_govote_url(election, voter.school, voter.level_of_study, voter.gender)
+  else:
+    election_vote_url = get_election_govote_url(election)
 
   default_subject = render_template_raw(None, 'email/%s_subject.txt' % template, {
       'custom_subject': "&lt;SUBJECT&gt;"
@@ -1400,7 +1425,27 @@ def voters_email(request, election):
         if email_form.cleaned_data['send_to'] == 'not-voted':
           voter_constraints_include = {'vote_hash': None}
 
-        tasks.voters_email.delay(election_id = election.id, subject_template = subject_template, body_template = body_template, extra_vars = extra_vars, voter_constraints_include = voter_constraints_include, voter_constraints_exclude = voter_constraints_exclude)
+        voters = election.voter_set.all()
+
+        if voter_constraints_include:
+          voters = voters.filter(**voter_constraints_include)
+
+        if voter_constraints_exclude:
+          voters = voters.exclude(**voter_constraints_exclude)
+
+        for voter in voters:
+          election_vote_url = get_election_govote_url(election, voter.school, voter.level_of_study, voter.gender)
+          extra_vars = {
+            'custom_subject' : email_form.cleaned_data['subject'],
+            'custom_message' : email_form.cleaned_data['body'],
+            'election_vote_url' : election_vote_url,
+            'election_url' : election_url
+          }
+          #want to override to have a custom election_vote_url.
+          tasks.single_voter_email.delay(voter_uuid = voter.uuid, subject_template = subject_template, body_template = body_template, extra_vars = extra_vars)
+
+        #commenting this out.
+        #tasks.voters_email.delay(election_id = election.id, subject_template = subject_template, body_template = body_template, extra_vars = extra_vars, voter_constraints_include = voter_constraints_include, voter_constraints_exclude = voter_constraints_exclude)
 
       # this batch process is all async, so we can return a nice note
       return HttpResponseRedirect(settings.SECURE_URL_HOST + reverse(url_names.election.ELECTION_VIEW, args=[election.uuid]))
