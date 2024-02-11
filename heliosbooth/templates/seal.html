@@ -1,7 +1,7 @@
 <h3>Review your Ballot</h3>
 
 <div style="padding: 10px; margin-bottom: 10px; background-color: #eee; border: 1px #ddd solid;">
-{#foreach $T.questions as question}
+{#foreach $T.visible_questions as question}
 
 Question #{$T.question$index + 1}: {$T.question.short_name}<br>
 {#if $T.choices[$T.question$index].length == 0}
@@ -13,7 +13,7 @@ Question #{$T.question$index + 1}: {$T.question.short_name}<br>
 {#if $T.choices[$T.question$index].length < $T.question.max}
 [{$T.choices[$T.question$index].length} selections out of possible {$T.question.min}-{$T.question.max}]<br />
 {#/if}
-[<a onclick="BOOTH.show_question({$T.question$index}); return false;" href="#">change</a>]
+[<a onclick="BOOTH.mapIndexToNumberInSeal($T.question$index); return false;" href="#">change</a>]
 {#if !$T.question$last}<br><br>{#/if}
 {#/for}
 </div>

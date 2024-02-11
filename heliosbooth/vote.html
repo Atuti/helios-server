@@ -44,6 +44,43 @@
 // utils
 BOOTH = {};
 
+$(document).ready(function() {
+
+// Get the URL parameters
+const urlParams = new URLSearchParams(window.location.search);
+
+// Get the value of the 'identifier' parameter
+var encodedSchoolIdentifier = urlParams.get('si');
+BOOTH.schoolIdentifier = encodedSchoolIdentifier.split('').reverse().join('');
+console.log('School Identifier:', BOOTH.schoolIdentifier);
+
+// Get the value of the 'identifier' parameter
+var encodedLevelIdentifier = urlParams.get('li');
+BOOTH.levelIdentifier = encodedLevelIdentifier.split('').reverse().join('');
+console.log('Level Identifier:', BOOTH.levelIdentifier);
+
+// Get the value of the 'identifier' parameter
+var encodedGenderIdentifier = urlParams.get('gi');
+BOOTH.genderIdentifier = encodedGenderIdentifier.split('').reverse().join('');
+console.log('School Identifier:', BOOTH.genderIdentifier);
+
+if (USE_SJCL) {
+  sjcl.random.startCollectors();
+}
+
+// we're asynchronous if we have SJCL and Worker
+BOOTH.synchronous = !(USE_SJCL && window.Worker);
+
+// we do in the browser only if it's asynchronous
+BigInt.in_browser = !BOOTH.synchronous;
+
+// set up dummy bigint for fast parsing and serialization
+if (!BigInt.in_browser)
+  BigInt = BigIntDummy;
+
+BigInt.setup(BOOTH.so_lets_go, BOOTH.nojava);
+});
+
 BOOTH.setup_templates = function() {
     if (BOOTH.templates_setup_p)
         return;
@@ -111,7 +148,8 @@ BOOTH.reset_ciphertexts = function() {
 
 BOOTH.log = function(msg) {
   if (typeof(console) != undefined)
-    console.log(msg);
+    //msg
+    console.log()
 };
 
 BOOTH.setup_workers = function(election_raw_json) {
@@ -252,15 +290,72 @@ BOOTH.validate_and_confirm = function(question_num) {
 };
 
 BOOTH.next = function(question_num) {
-    if (BOOTH.validate_question(question_num)) {
-        BOOTH.show_question(question_num + 1);
+
+  if (BOOTH.validate_question(question_num)) {
+
+    console.log('question_num: ', question_num)
+
+    var num = question_num + 1;
+    while(num < BOOTH.election.questions.length){
+      if(BOOTH.isQuestionVisibleForUser(num)){
+        BOOTH.questionIndex++;
+        var index = BOOTH.questionIndex;
+
+        console.log('num in next: ', num)
+        
+        //if index not in dictionary, add it.
+        if(!BOOTH.indexNumberDictionary.hasOwnProperty(index)){
+          BOOTH.indexNumberDictionary[index] = num;
+        }
+        BOOTH.show_question(num, index);
+        break;
+      }else {
+        num ++;
+      }
     }
+  }
+};
+
+BOOTH.isLastVisibleQuestion = function(question_num){
+  
+  var num = question_num + 1;
+  if(num >= (BOOTH.election.questions.length)){//num is length + 1
+    //this is last question
+    console.log("show proceed 1");
+    return true;
+  } else{
+
+    for(num; num < BOOTH.election.questions.length; num++){
+      if(BOOTH.isQuestionVisibleForUser(num)){
+        return false;
+      }
+    }
+    console.log("show proceed 2");
+    return true;
+  }
 };
 
 BOOTH.previous = function(question_num) {
-    if (BOOTH.validate_question(question_num)) {
-        BOOTH.show_question(question_num - 1);
-    }
+  if (BOOTH.validate_question(question_num) ) {
+    var num = question_num - 1;
+    while(num >= 0){//assuming the first question is numbered 1
+      if (BOOTH.isQuestionVisibleForUser(num)){
+        BOOTH.questionIndex--;
+        var index = BOOTH.questionIndex;
+
+        console.log('num in previous: ', num)
+
+        if(!BOOTH.indexNumberDictionary.hasOwnProperty(index)){
+          BOOTH.indexNumberDictionary[index] = num;
+        }
+        BOOTH.show_question(num, index);
+        break;
+      }else {
+        num--;
+      }
+    } 
+      
+  }
 };
 
 // http://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
@@ -285,16 +380,35 @@ function shuffleArray(array) {
   return array;
 }
 
-BOOTH.show_question = function(question_num) {
+BOOTH.questionCounter = function(){
+  //questions voter should see
+  var questionCounter = 0;
+  for(var num=0; num < BOOTH.election.questions.length; num++){
+    if(BOOTH.isQuestionVisibleForUser(num)){
+      questionCounter++;
+    }
+  }
+  return questionCounter;
+};
+
+BOOTH.show_question = function(question_num, index) {
   BOOTH.started_p = true;
 
+  console.log('index in show_question', index, 'question number', question_num)
+
   // the first time we hit the last question, we enable the review all button
-  if (question_num == BOOTH.election.questions.length -1)
+  if (question_num == BOOTH.election.questions.length -1 || BOOTH.isLastVisibleQuestion(question_num)){
     BOOTH.all_questions_seen = true;
+  }
+    
+
+  console.log("last question ", BOOTH.questionCounter())
+
 
   BOOTH.show_progress('1');
   BOOTH.show($('#question_div')).processTemplate({'question_num' : question_num,
-                      'last_question_num' : BOOTH.election.questions.length - 1,
+                      'index' : index,
+                      'last_question_num' : BOOTH.questionCounter(),
                       'question' : BOOTH.election.questions[question_num], 'show_reviewall' : BOOTH.all_questions_seen,
 		      'answer_ordering': BOOTH.election.question_answer_orderings[question_num]
                 });
@@ -312,7 +426,78 @@ BOOTH.show_question = function(question_num) {
   BOOTH.dirty[question_num] = old_dirty;
 };
 
+BOOTH.mapIndexToNumberInSeal = function(sealIndex){
+  var number = BOOTH.indexNumberDictionary.sealIndex;
+  //call BOOTH.show_question()
+  BOOTH.show_question(number, sealIndex);
+};
 
+BOOTH.isQuestionVisibleForUser = function(question_num){
+  console.log(question_num, BOOTH.election.questions[question_num].school)
+  console.log(question_num, BOOTH.election.questions[question_num].level_of_study)
+  console.log(question_num, BOOTH.election.questions[question_num].gender)
+  console.log(question_num, BOOTH.election.questions[question_num].question)
+
+  if(
+    (BOOTH.election.questions[question_num].school === BOOTH.schoolIdentifier || BOOTH.election.questions[question_num].school === 'any')
+    &&
+    (BOOTH.election.questions[question_num].level_of_study === BOOTH.levelIdentifier || BOOTH.election.questions[question_num].level_of_study === 'any')
+    &&
+    (BOOTH.election.questions[question_num].gender === BOOTH.genderIdentifier || BOOTH.election.questions[question_num].gender === 'any')
+  ){
+      //console.log('question is visible')
+      return true;
+  }
+  else{
+      //console.log('question is not visible')
+      return false;
+  }
+};
+
+BOOTH.questionsFirstLoad = function () {
+  var num = 0;
+  while(num < BOOTH.election.questions.length){
+    if(BOOTH.isQuestionVisibleForUser(num)){
+      //save number and index to a dictionary.
+      //mainly for use by seal div.
+      BOOTH.indexNumberDictionary[BOOTH.questionIndex] = num;
+
+      //console.log("num in first load", num)
+
+      BOOTH.show_question(num, BOOTH.questionIndex);
+      //questionIndex = 1
+      break;
+    }else{
+      num++;
+    }
+
+    //no question anymore
+    if(num >= BOOTH.election.questions.length){
+      //BOOTH.seal_ballot();
+      alert("you have no qualifications to vote")
+    }
+  }
+};
+
+BOOTH.questionIndex = 1;
+
+BOOTH.indexNumberDictionary = {};
+
+BOOTH.visibleQuestions = function(){
+
+  //all questions
+  BOOTH.election.questions
+
+  var visibleQuestions = [];
+  for(var i=0; i< BOOTH.election.questions.length-1; i++){
+    if(BOOTH.isQuestionVisibleForUser(i)){
+      visibleQuestions.push(BOOTH.election.questions[i])
+    }
+  }
+
+  return visibleQuestions;
+
+}
 
 BOOTH.click_checkbox_script = function(question_num, answer_num) {
   document.forms['answer_form']['answer_'+question_num+'_'+answer_num].click();
@@ -378,6 +563,7 @@ BOOTH.load_and_setup_election = function(election_url) {
         $.getJSON(election_url + "/meta", {}, function(election_metadata) {
           BOOTH.election_metadata = election_metadata;
           BOOTH.setup_election(raw_json, election_metadata);
+          console.log(raw_json)
           BOOTH.show_election();
           BOOTH.election_url = election_url;
         });
@@ -430,40 +616,6 @@ BOOTH.nojava = function() {
 
 BOOTH.ready_p = false;
 
-$(document).ready(function() {
-
-    // Get the URL parameters
-    const urlParams = new URLSearchParams(window.location.search);
-
-    // Get the value of the 'identifier' parameter
-    const school_identifier = urlParams.get('si');
-    console.log('School Identifier:', school_identifier);
-
-    // Get the value of the 'identifier' parameter
-    const level_identifier = urlParams.get('li');
-    console.log('Level Identifier:', level_identifier);
-
-    // Get the value of the 'identifier' parameter
-    const gender_identifier = urlParams.get('gi');
-    console.log('School Identifier:', gender_identifier);
-
-    if (USE_SJCL) {
-      sjcl.random.startCollectors();
-    }
-
-    // we're asynchronous if we have SJCL and Worker
-    BOOTH.synchronous = !(USE_SJCL && window.Worker);
-
-    // we do in the browser only if it's asynchronous
-    BigInt.in_browser = !BOOTH.synchronous;
-
-    // set up dummy bigint for fast parsing and serialization
-    if (!BigInt.in_browser)
-      BigInt = BigIntDummy;
-
-    BigInt.setup(BOOTH.so_lets_go, BOOTH.nojava);
-});
-
 
 BOOTH.check_encryption_status = function() {
   var progress = BOOTH.progress.progress();
@@ -491,6 +643,7 @@ BOOTH._after_ballot_encryption = function() {
         'election': BOOTH.election,
         'election_metadata': BOOTH.election_metadata,
         'questions' : BOOTH.election.questions,
+        'visible_questions': BOOTH.visibleQuestions,
         'choices' : BALLOT.pretty_choices(BOOTH.election, BOOTH.ballot)});
       BOOTH.show($('#seal_div'));
       BOOTH.encrypted_vote_json = null;
